@@ -1,0 +1,132 @@
+QUERY PLAN                                                                                                                                                       |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+Result  (cost=19999.25..19999.26 rows=1 width=64) (actual time=195.733..195.747 rows=1.00 loops=1)                                                               |
+  Buffers: shared hit=4908                                                                                                                                       |
+  InitPlan 2                                                                                                                                                     |
+    ->  Limit  (cost=9996.62..9999.62 rows=1 width=32) (actual time=90.112..90.121 rows=1.00 loops=1)                                                            |
+          Buffers: shared hit=2454                                                                                                                               |
+          InitPlan 1                                                                                                                                             |
+            ->  Aggregate  (cost=5298.23..5298.24 rows=1 width=32) (actual time=52.356..52.360 rows=1.00 loops=1)                                                |
+                  Buffers: shared hit=1227                                                                                                                       |
+                  ->  HashAggregate  (cost=4698.38..4998.31 rows=23994 width=46) (actual time=50.288..51.924 rows=8445.00 loops=1)                               |
+                        Group Key: c.name                                                                                                                        |
+                        Batches: 1  Memory Usage: 3857kB                                                                                                         |
+                        Buffers: shared hit=1227                                                                                                                 |
+                        ->  Hash Join  (cost=1952.30..4226.13 rows=47225 width=24) (actual time=11.416..36.167 rows=46949.00 loops=1)                            |
+                              Hash Cond: (o.product_id = p.product_id)                                                                                           |
+                              Buffers: shared hit=1227                                                                                                           |
+                              ->  Hash Join  (cost=1021.30..3171.14 rows=47225 width=22) (actual time=6.354..23.151 rows=46949.00 loops=1)                       |
+                                    Hash Cond: (o.customer_id = c.customer_id)                                                                                   |
+                                    Buffers: shared hit=971                                                                                                      |
+                                    ->  Seq Scan on orders o  (cost=0.00..2012.00 rows=52503 width=12) (actual time=0.015..8.635 rows=52135.00 loops=1)          |
+                                          Filter: ((order_date > '2023-01-01'::date) AND ((status)::text = 'Delivered'::text))                                   |
+                                          Rows Removed by Filter: 37865                                                                                          |
+                                          Buffers: shared hit=662                                                                                                |
+                                    ->  Hash  (cost=684.00..684.00 rows=26984 width=18) (actual time=6.273..6.274 rows=26984.00 loops=1)                         |
+                                          Buckets: 32768  Batches: 1  Memory Usage: 1621kB                                                                       |
+                                          Buffers: shared hit=309                                                                                                |
+                                          ->  Seq Scan on customers c  (cost=0.00..684.00 rows=26984 width=18) (actual time=0.010..3.495 rows=26984.00 loops=1)  |
+                                                Filter: ((status)::text = ANY ('{active,premium}'::text[]))                                                      |
+                                                Rows Removed by Filter: 3016                                                                                     |
+                                                Buffers: shared hit=309                                                                                          |
+                              ->  Hash  (cost=556.00..556.00 rows=30000 width=10) (actual time=4.982..4.983 rows=30000.00 loops=1)                               |
+                                    Buckets: 32768  Batches: 1  Memory Usage: 1546kB                                                                             |
+                                    Buffers: shared hit=256                                                                                                      |
+                                    ->  Seq Scan on products p  (cost=0.00..556.00 rows=30000 width=10) (actual time=0.023..2.097 rows=30000.00 loops=1)         |
+                                          Buffers: shared hit=256                                                                                                |
+          ->  Subquery Scan on sub_min  (cost=4698.38..5058.59 rows=120 width=32) (actual time=90.111..90.115 rows=1.00 loops=1)                                 |
+                Buffers: shared hit=2454                                                                                                                         |
+                ->  HashAggregate  (cost=4698.38..5058.29 rows=120 width=46) (actual time=90.103..90.106 rows=1.00 loops=1)                                      |
+                      Group Key: c_1.name                                                                                                                        |
+                      Filter: (sum((p_1.price * (o_1.quantity)::numeric)) = (InitPlan 1).col1)                                                                   |
+                      Batches: 1  Memory Usage: 3857kB                                                                                                           |
+                      Rows Removed by Filter: 1484                                                                                                               |
+                      Buffers: shared hit=2454                                                                                                                   |
+                      ->  Hash Join  (cost=1952.30..4226.13 rows=47225 width=24) (actual time=8.074..26.998 rows=46949.00 loops=1)                               |
+                            Hash Cond: (o_1.product_id = p_1.product_id)                                                                                         |
+                            Buffers: shared hit=1227                                                                                                             |
+                            ->  Hash Join  (cost=1021.30..3171.14 rows=47225 width=22) (actual time=4.596..17.186 rows=46949.00 loops=1)                         |
+                                  Hash Cond: (o_1.customer_id = c_1.customer_id)                                                                                 |
+                                  Buffers: shared hit=971                                                                                                        |
+                                  ->  Seq Scan on orders o_1  (cost=0.00..2012.00 rows=52503 width=12) (actual time=0.013..6.293 rows=52135.00 loops=1)          |
+                                        Filter: ((order_date > '2023-01-01'::date) AND ((status)::text = 'Delivered'::text))                                     |
+                                        Rows Removed by Filter: 37865                                                                                            |
+                                        Buffers: shared hit=662                                                                                                  |
+                                  ->  Hash  (cost=684.00..684.00 rows=26984 width=18) (actual time=4.515..4.516 rows=26984.00 loops=1)                           |
+                                        Buckets: 32768  Batches: 1  Memory Usage: 1621kB                                                                         |
+                                        Buffers: shared hit=309                                                                                                  |
+                                        ->  Seq Scan on customers c_1  (cost=0.00..684.00 rows=26984 width=18) (actual time=0.009..2.526 rows=26984.00 loops=1)  |
+                                              Filter: ((status)::text = ANY ('{active,premium}'::text[]))                                                        |
+                                              Rows Removed by Filter: 3016                                                                                       |
+                                              Buffers: shared hit=309                                                                                            |
+                            ->  Hash  (cost=556.00..556.00 rows=30000 width=10) (actual time=3.423..3.423 rows=30000.00 loops=1)                                 |
+                                  Buckets: 32768  Batches: 1  Memory Usage: 1546kB                                                                               |
+                                  Buffers: shared hit=256                                                                                                        |
+                                  ->  Seq Scan on products p_1  (cost=0.00..556.00 rows=30000 width=10) (actual time=0.014..1.498 rows=30000.00 loops=1)         |
+                                        Buffers: shared hit=256                                                                                                  |
+  InitPlan 4                                                                                                                                                     |
+    ->  Limit  (cost=9996.62..9999.62 rows=1 width=32) (actual time=105.617..105.622 rows=1.00 loops=1)                                                          |
+          Buffers: shared hit=2454                                                                                                                               |
+          InitPlan 3                                                                                                                                             |
+            ->  Aggregate  (cost=5298.23..5298.24 rows=1 width=32) (actual time=61.817..61.819 rows=1.00 loops=1)                                                |
+                  Buffers: shared hit=1227                                                                                                                       |
+                  ->  HashAggregate  (cost=4698.38..4998.31 rows=23994 width=46) (actual time=59.068..61.279 rows=8445.00 loops=1)                               |
+                        Group Key: c_2.name                                                                                                                      |
+                        Batches: 1  Memory Usage: 3857kB                                                                                                         |
+                        Buffers: shared hit=1227                                                                                                                 |
+                        ->  Hash Join  (cost=1952.30..4226.13 rows=47225 width=24) (actual time=11.660..42.497 rows=46949.00 loops=1)                            |
+                              Hash Cond: (o_2.product_id = p_2.product_id)                                                                                       |
+                              Buffers: shared hit=1227                                                                                                           |
+                              ->  Hash Join  (cost=1021.30..3171.14 rows=47225 width=22) (actual time=6.406..27.321 rows=46949.00 loops=1)                       |
+                                    Hash Cond: (o_2.customer_id = c_2.customer_id)                                                                               |
+                                    Buffers: shared hit=971                                                                                                      |
+                                    ->  Seq Scan on orders o_2  (cost=0.00..2012.00 rows=52503 width=12) (actual time=0.018..11.336 rows=52135.00 loops=1)       |
+                                          Filter: ((order_date > '2023-01-01'::date) AND ((status)::text = 'Delivered'::text))                                   |
+                                          Rows Removed by Filter: 37865                                                                                          |
+                                          Buffers: shared hit=662                                                                                                |
+                                    ->  Hash  (cost=684.00..684.00 rows=26984 width=18) (actual time=6.309..6.309 rows=26984.00 loops=1)                         |
+                                          Buckets: 32768  Batches: 1  Memory Usage: 1621kB                                                                       |
+                                          Buffers: shared hit=309                                                                                                |
+                                          ->  Seq Scan on customers c_2  (cost=0.00..684.00 rows=26984 width=18) (actual time=0.009..3.482 rows=26984.00 loops=1)|
+                                                Filter: ((status)::text = ANY ('{active,premium}'::text[]))                                                      |
+                                                Rows Removed by Filter: 3016                                                                                     |
+                                                Buffers: shared hit=309                                                                                          |
+                              ->  Hash  (cost=556.00..556.00 rows=30000 width=10) (actual time=5.166..5.166 rows=30000.00 loops=1)                               |
+                                    Buckets: 32768  Batches: 1  Memory Usage: 1546kB                                                                             |
+                                    Buffers: shared hit=256                                                                                                      |
+                                    ->  Seq Scan on products p_2  (cost=0.00..556.00 rows=30000 width=10) (actual time=0.020..2.316 rows=30000.00 loops=1)       |
+                                          Buffers: shared hit=256                                                                                                |
+          ->  Subquery Scan on sub_max  (cost=4698.38..5058.59 rows=120 width=32) (actual time=105.616..105.618 rows=1.00 loops=1)                               |
+                Buffers: shared hit=2454                                                                                                                         |
+                ->  HashAggregate  (cost=4698.38..5058.29 rows=120 width=46) (actual time=105.608..105.611 rows=1.00 loops=1)                                    |
+                      Group Key: c_3.name                                                                                                                        |
+                      Filter: (sum((p_3.price * (o_3.quantity)::numeric)) = (InitPlan 3).col1)                                                                   |
+                      Batches: 1  Memory Usage: 3857kB                                                                                                           |
+                      Rows Removed by Filter: 2312                                                                                                               |
+                      Buffers: shared hit=2454                                                                                                                   |
+                      ->  Hash Join  (cost=1952.30..4226.13 rows=47225 width=24) (actual time=11.563..31.359 rows=46949.00 loops=1)                              |
+                            Hash Cond: (o_3.product_id = p_3.product_id)                                                                                         |
+                            Buffers: shared hit=1227                                                                                                             |
+                            ->  Hash Join  (cost=1021.30..3171.14 rows=47225 width=22) (actual time=6.542..19.880 rows=46949.00 loops=1)                         |
+                                  Hash Cond: (o_3.customer_id = c_3.customer_id)                                                                                 |
+                                  Buffers: shared hit=971                                                                                                        |
+                                  ->  Seq Scan on orders o_3  (cost=0.00..2012.00 rows=52503 width=12) (actual time=0.015..6.511 rows=52135.00 loops=1)          |
+                                        Filter: ((order_date > '2023-01-01'::date) AND ((status)::text = 'Delivered'::text))                                     |
+                                        Rows Removed by Filter: 37865                                                                                            |
+                                        Buffers: shared hit=662                                                                                                  |
+                                  ->  Hash  (cost=684.00..684.00 rows=26984 width=18) (actual time=6.463..6.463 rows=26984.00 loops=1)                           |
+                                        Buckets: 32768  Batches: 1  Memory Usage: 1621kB                                                                         |
+                                        Buffers: shared hit=309                                                                                                  |
+                                        ->  Seq Scan on customers c_3  (cost=0.00..684.00 rows=26984 width=18) (actual time=0.010..3.349 rows=26984.00 loops=1)  |
+                                              Filter: ((status)::text = ANY ('{active,premium}'::text[]))                                                        |
+                                              Rows Removed by Filter: 3016                                                                                       |
+                                              Buffers: shared hit=309                                                                                            |
+                            ->  Hash  (cost=556.00..556.00 rows=30000 width=10) (actual time=4.952..4.952 rows=30000.00 loops=1)                                 |
+                                  Buckets: 32768  Batches: 1  Memory Usage: 1546kB                                                                               |
+                                  Buffers: shared hit=256                                                                                                        |
+                                  ->  Seq Scan on products p_3  (cost=0.00..556.00 rows=30000 width=10) (actual time=0.023..2.127 rows=30000.00 loops=1)         |
+                                        Buffers: shared hit=256                                                                                                  |
+Planning:                                                                                                                                                        |
+  Buffers: shared hit=72                                                                                                                                         |
+Planning Time: 0.665 ms                                                                                                                                          |
+Execution Time: 199.373 ms                                                                                                                                       |
