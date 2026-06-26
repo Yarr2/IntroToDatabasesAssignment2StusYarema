@@ -8,7 +8,7 @@ from faker import Faker
 DB_SETTINGS = {
     "dbname": "shop",
     "user": "postgres",
-    "password": "geo56KtFh#@", ##todo remove password
+    "password": "somePassword",
     "host": "localhost",
     "port": "5432"
 }
