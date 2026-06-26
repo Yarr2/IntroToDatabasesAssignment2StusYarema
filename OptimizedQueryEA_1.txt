@@ -1,0 +1,50 @@
+QUERY PLAN                                                                                                                                                             |
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+Aggregate  (cost=9809.20..9809.21 rows=1 width=64) (actual time=48.729..48.732 rows=1.00 loops=1)                                                                      |
+  Buffers: shared hit=1233                                                                                                                                             |
+  ->  WindowAgg  (cost=8969.43..9449.29 rows=23994 width=62) (actual time=47.368..48.434 rows=8445.00 loops=1)                                                         |
+        Window: w2 AS (ORDER BY (sum((p.price * (o.quantity)::numeric))), c.name ROWS UNBOUNDED PRECEDING)                                                             |
+        Storage: Memory  Maximum Storage: 17kB                                                                                                                         |
+        Buffers: shared hit=1233                                                                                                                                       |
+        ->  Sort  (cost=8969.41..9029.39 rows=23994 width=54) (actual time=47.362..47.557 rows=8445.00 loops=1)                                                        |
+              Sort Key: (sum((p.price * (o.quantity)::numeric))), c.name                                                                                               |
+              Sort Method: quicksort  Memory: 792kB                                                                                                                    |
+              Buffers: shared hit=1233                                                                                                                                 |
+              ->  WindowAgg  (cost=6743.94..7223.80 rows=23994 width=54) (actual time=44.496..45.693 rows=8445.00 loops=1)                                             |
+                    Window: w1 AS (ORDER BY (sum((p.price * (o.quantity)::numeric))), c.name ROWS UNBOUNDED PRECEDING)                                                 |
+                    Storage: Memory  Maximum Storage: 17kB                                                                                                             |
+                    Buffers: shared hit=1227                                                                                                                           |
+                    ->  Sort  (cost=6743.92..6803.90 rows=23994 width=46) (actual time=44.485..44.720 rows=8445.00 loops=1)                                            |
+                          Sort Key: (sum((p.price * (o.quantity)::numeric))) DESC, c.name                                                                              |
+                          Sort Method: quicksort  Memory: 726kB                                                                                                        |
+                          Buffers: shared hit=1227                                                                                                                     |
+                          ->  HashAggregate  (cost=4698.38..4998.31 rows=23994 width=46) (actual time=41.410..42.859 rows=8445.00 loops=1)                             |
+                                Group Key: c.name                                                                                                                      |
+                                Batches: 1  Memory Usage: 3857kB                                                                                                       |
+                                Buffers: shared hit=1227                                                                                                               |
+                                ->  Hash Join  (cost=1952.30..4226.13 rows=47225 width=24) (actual time=9.240..29.611 rows=46949.00 loops=1)                           |
+                                      Hash Cond: (o.product_id = p.product_id)                                                                                         |
+                                      Buffers: shared hit=1227                                                                                                         |
+                                      ->  Hash Join  (cost=1021.30..3171.14 rows=47225 width=22) (actual time=5.151..18.668 rows=46949.00 loops=1)                     |
+                                            Hash Cond: (o.customer_id = c.customer_id)                                                                                 |
+                                            Buffers: shared hit=971                                                                                                    |
+                                            ->  Seq Scan on orders o  (cost=0.00..2012.00 rows=52503 width=12) (actual time=0.017..6.565 rows=52135.00 loops=1)        |
+                                                  Filter: ((order_date > '2023-01-01'::date) AND ((status)::text = 'Delivered'::text))                                 |
+                                                  Rows Removed by Filter: 37865                                                                                        |
+                                                  Buffers: shared hit=662                                                                                              |
+                                            ->  Hash  (cost=684.00..684.00 rows=26984 width=18) (actual time=5.050..5.051 rows=26984.00 loops=1)                       |
+                                                  Buckets: 32768  Batches: 1  Memory Usage: 1621kB                                                                     |
+                                                  Buffers: shared hit=309                                                                                              |
+                                                  ->  Seq Scan on customers c  (cost=0.00..684.00 rows=26984 width=18) (actual time=0.011..2.904 rows=26984.00 loops=1)|
+                                                        Filter: ((status)::text = ANY ('{active,premium}'::text[]))                                                    |
+                                                        Rows Removed by Filter: 3016                                                                                   |
+                                                        Buffers: shared hit=309                                                                                        |
+                                      ->  Hash  (cost=556.00..556.00 rows=30000 width=10) (actual time=4.021..4.022 rows=30000.00 loops=1)                             |
+                                            Buckets: 32768  Batches: 1  Memory Usage: 1546kB                                                                           |
+                                            Buffers: shared hit=256                                                                                                    |
+                                            ->  Seq Scan on products p  (cost=0.00..556.00 rows=30000 width=10) (actual time=0.022..1.936 rows=30000.00 loops=1)       |
+                                                  Buffers: shared hit=256                                                                                              |
+Planning:                                                                                                                                                              |
+  Buffers: shared hit=473                                                                                                                                              |
+Planning Time: 10.761 ms                                                                                                                                               |
+Execution Time: 49.430 ms                                                                                                                                              |
