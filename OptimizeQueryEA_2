@@ -1,0 +1,62 @@
+QUERY PLAN                                                                                                                                                                                       |
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+Aggregate  (cost=3844.11..3844.12 rows=1 width=64) (actual time=10.762..10.765 rows=1.00 loops=1)                                                                                                |
+  Buffers: shared hit=1126                                                                                                                                                                       |
+  ->  WindowAgg  (cost=3672.95..3770.75 rows=4891 width=62) (actual time=10.477..10.703 rows=1799.00 loops=1)                                                                                    |
+        Window: w2 AS (ORDER BY (sum((p.price * (o.quantity)::numeric))), c.name ROWS UNBOUNDED PRECEDING)                                                                                       |
+        Storage: Memory  Maximum Storage: 17kB                                                                                                                                                   |
+        Buffers: shared hit=1126                                                                                                                                                                 |
+        ->  Sort  (cost=3672.93..3685.15 rows=4891 width=54) (actual time=10.474..10.516 rows=1799.00 loops=1)                                                                                   |
+              Sort Key: (sum((p.price * (o.quantity)::numeric))), c.name                                                                                                                         |
+              Sort Method: quicksort  Memory: 134kB                                                                                                                                              |
+              Buffers: shared hit=1126                                                                                                                                                           |
+              ->  WindowAgg  (cost=3275.41..3373.21 rows=4891 width=54) (actual time=9.952..10.183 rows=1799.00 loops=1)                                                                         |
+                    Window: w1 AS (ORDER BY (sum((p.price * (o.quantity)::numeric))), c.name ROWS UNBOUNDED PRECEDING)                                                                           |
+                    Storage: Memory  Maximum Storage: 17kB                                                                                                                                       |
+                    Buffers: shared hit=1126                                                                                                                                                     |
+                    ->  Sort  (cost=3275.39..3287.62 rows=4891 width=46) (actual time=9.949..9.995 rows=1799.00 loops=1)                                                                         |
+                          Sort Key: (sum((p.price * (o.quantity)::numeric))) DESC, c.name                                                                                                        |
+                          Sort Method: quicksort  Memory: 120kB                                                                                                                                  |
+                          Buffers: shared hit=1126                                                                                                                                               |
+                          ->  HashAggregate  (cost=2914.53..2975.67 rows=4891 width=46) (actual time=9.414..9.643 rows=1799.00 loops=1)                                                          |
+                                Group Key: c.name                                                                                                                                                |
+                                Batches: 1  Memory Usage: 1041kB                                                                                                                                 |
+                                Buffers: shared hit=1126                                                                                                                                         |
+                                ->  Merge Join  (cost=2418.92..2865.62 rows=4891 width=24) (actual time=6.609..8.341 rows=4786.00 loops=1)                                                       |
+                                      Merge Cond: (p.product_id = o.product_id)                                                                                                                  |
+                                      Buffers: shared hit=1126                                                                                                                                   |
+                                      ->  Index Scan using products_pkey on products p  (cost=0.29..1045.29 rows=30000 width=10) (actual time=0.008..0.688 rows=10001.00 loops=1)                |
+                                            Index Searches: 1                                                                                                                                    |
+                                            Buffers: shared hit=118                                                                                                                              |
+                                      ->  Sort  (cost=2418.64..2430.86 rows=4891 width=22) (actual time=6.599..6.749 rows=4786.00 loops=1)                                                       |
+                                            Sort Key: o.product_id                                                                                                                               |
+                                            Sort Method: quicksort  Memory: 385kB                                                                                                                |
+                                            Buffers: shared hit=1008                                                                                                                             |
+                                            ->  Hash Join  (cost=900.84..2118.92 rows=4891 width=22) (actual time=1.833..5.974 rows=4786.00 loops=1)                                             |
+                                                  Hash Cond: (o.customer_id = c.customer_id)                                                                                                     |
+                                                  Buffers: shared hit=1008                                                                                                                       |
+                                                  ->  Bitmap Heap Scan on orders o  (cost=372.19..1525.70 rows=24597 width=12) (actual time=0.657..3.392 rows=24107.00 loops=1)                  |
+                                                        Recheck Cond: (order_date > '2024-11-01'::date)                                                                                          |
+                                                        Filter: ((status)::text = 'Delivered'::text)                                                                                             |
+                                                        Rows Removed by Filter: 8144                                                                                                             |
+                                                        Heap Blocks: exact=662                                                                                                                   |
+                                                        Buffers: shared hit=692                                                                                                                  |
+                                                        ->  Bitmap Index Scan on idx_orders_date  (cost=0.00..366.05 rows=32767 width=0) (actual time=0.601..0.601 rows=32251.00 loops=1)        |
+                                                              Index Cond: (order_date > '2024-11-01'::date)                                                                                      |
+                                                              Index Searches: 1                                                                                                                  |
+                                                              Buffers: shared hit=30                                                                                                             |
+                                                  ->  Hash  (cost=454.08..454.08 rows=5965 width=18) (actual time=1.151..1.151 rows=5965.00 loops=1)                                             |
+                                                        Buckets: 8192  Batches: 1  Memory Usage: 366kB                                                                                           |
+                                                        Buffers: shared hit=316                                                                                                                  |
+                                                        ->  Bitmap Heap Scan on customers c  (cost=70.52..454.08 rows=5965 width=18) (actual time=0.100..0.731 rows=5965.00 loops=1)             |
+                                                              Recheck Cond: ((status)::text = 'premium'::text)                                                                                   |
+                                                              Heap Blocks: exact=309                                                                                                             |
+                                                              Buffers: shared hit=316                                                                                                            |
+                                                              ->  Bitmap Index Scan on idx_customers_status  (cost=0.00..69.02 rows=5965 width=0) (actual time=0.077..0.077 rows=5965.00 loops=1)|
+                                                                    Index Cond: ((status)::text = 'premium'::text)                                                                               |
+                                                                    Index Searches: 1                                                                                                            |
+                                                                    Buffers: shared hit=7                                                                                                        |
+Planning:                                                                                                                                                                                        |
+  Buffers: shared hit=18                                                                                                                                                                         |
+Planning Time: 0.334 ms                                                                                                                                                                          |
+Execution Time: 11.047 ms                                                                                                                                                                        |
